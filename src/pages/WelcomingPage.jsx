@@ -6,9 +6,10 @@ const WelcomingPage = () => {
   const [newStock, setNewStock] = useState({ name: '', quantity: '' });
   const [editingStock, setEditingStock] = useState(null);
   const [message, setMessage] = useState('');
-  const [existingStock, setExistingStock] = useState(null); // Untuk stok yang sudah ada
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false); // Untuk konfirmasi penghapusan
-  const [selectedStockToDelete, setSelectedStockToDelete] = useState(null); // Stok yang akan dihapus
+  const [searchQuery, setSearchQuery] = useState(''); // Untuk fitur pencarian
+  const [existingStock, setExistingStock] = useState(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [selectedStockToDelete, setSelectedStockToDelete] = useState(null);
 
   const apiUrl = 'http://localhost/data_ujian/api.php';
 
@@ -29,13 +30,12 @@ const WelcomingPage = () => {
     e.preventDefault();
 
     if (!editingStock) {
-      // Periksa jika stok sudah ada hanya jika tidak sedang dalam mode edit
       const existingItem = stockList.find(
         (item) => item.name.toLowerCase() === newStock.name.toLowerCase()
       );
 
       if (existingItem) {
-        setExistingStock(existingItem); // Simpan stok yang ditemukan
+        setExistingStock(existingItem);
         setMessage(`Stok "${existingItem.name}" sudah ada.`);
         return;
       }
@@ -44,7 +44,6 @@ const WelcomingPage = () => {
     if (newStock.name && newStock.quantity) {
       try {
         if (editingStock) {
-          // Perbarui stok jika sedang dalam mode edit
           await axios.put(apiUrl, {
             id: editingStock.id,
             quantity: parseInt(newStock.quantity),
@@ -52,7 +51,6 @@ const WelcomingPage = () => {
           });
           setMessage('Stok berhasil diperbarui!');
         } else {
-          // Tambahkan stok baru jika tidak sedang mengedit
           await axios.post(apiUrl, {
             name: newStock.name,
             quantity: parseInt(newStock.quantity),
@@ -62,7 +60,7 @@ const WelcomingPage = () => {
         fetchStocks();
         setNewStock({ name: '', quantity: '' });
         setEditingStock(null);
-        setExistingStock(null); // Reset existingStock setelah berhasil
+        setExistingStock(null);
       } catch (error) {
         console.error('Error adding/updating stock:', error);
       }
@@ -74,7 +72,7 @@ const WelcomingPage = () => {
       await axios.delete(apiUrl, { data: { id: selectedStockToDelete.id } });
       setMessage('Stok berhasil dihapus!');
       fetchStocks();
-      setShowDeleteConfirmation(false); // Sembunyikan pop-up setelah menghapus
+      setShowDeleteConfirmation(false);
     } catch (error) {
       console.error('Error deleting stock:', error);
     }
@@ -84,14 +82,14 @@ const WelcomingPage = () => {
     setNewStock({ name: item.name, quantity: item.quantity.toString() });
     setEditingStock(item);
     setMessage('Anda sedang mengedit stok ini.');
-    setExistingStock(null); // Reset existing stock saat edit
+    setExistingStock(null);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewStock((prev) => ({ ...prev, [name]: value }));
     setMessage('');
-    setExistingStock(null); // Reset existing stock jika input berubah
+    setExistingStock(null);
   };
 
   const openDeleteConfirmation = (item) => {
@@ -104,10 +102,13 @@ const WelcomingPage = () => {
     setSelectedStockToDelete(null);
   };
 
+  const filteredStocks = stockList.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-purple-500 via-pink-600 to-red-600 text-white font-sans">
       <div className="max-w-6xl w-full p-6 bg-white shadow-lg rounded-lg flex">
-        {/* Form Input di Kiri */}
         <div className="w-full sm:w-1/2 p-4">
           <h1 className="text-4xl font-bold text-center text-gray-900 mb-4">
             Selamat Datang di Aplikasi Pakan Ternak
@@ -115,15 +116,11 @@ const WelcomingPage = () => {
           <p className="text-lg text-center text-gray-700 mb-8">
             Kelola stok pakan ternak Anda dengan mudah dan efisien.
           </p>
-
-          {/* Pesan Status */}
           {message && (
             <div className="bg-yellow-300 text-black p-4 rounded-md mb-6">
               <p>{message}</p>
             </div>
           )}
-
-          {/* Pop-up jika stok sudah ada */}
           {existingStock && (
             <div className="bg-red-300 text-black p-4 rounded-md mb-6">
               <p>
@@ -138,7 +135,6 @@ const WelcomingPage = () => {
               </button>
             </div>
           )}
-
           <form onSubmit={handleAddStock} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -176,23 +172,35 @@ const WelcomingPage = () => {
             </button>
           </form>
         </div>
-
-        {/* Daftar Stok di Kanan */}
         <div className="w-full sm:w-1/2 p-4">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Daftar Stok Pakan Ternak</h2>
-          {stockList.length === 0 ? (
-            <p className="text-center text-gray-600">Data kosong, silakan tambah stok.</p>
+          <input
+            type="text"
+            placeholder="Cari pakan..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 mb-4 border rounded-md focus:ring-2 focus:ring-indigo-500 text-black"
+          />
+          {filteredStocks.length === 0 ? (
+            <p className="text-center text-gray-600">Tidak ada data yang cocok.</p>
           ) : (
             <div className="max-h-96 overflow-y-auto">
               <ul className="space-y-4">
-                {stockList.map((item) => (
+                {filteredStocks.map((item) => (
                   <li
                     key={item.id}
-                    className="bg-gray-50 p-4 rounded-lg shadow-lg flex justify-between items-center hover:bg-gray-100 transition-all"
+                    className={`bg-gray-50 p-4 rounded-lg shadow-lg flex justify-between items-center hover:bg-gray-100 transition-all ${
+                      item.quantity < 5 ? 'border-l-4 border-red-600' : ''
+                    }`}
                   >
                     <div>
                       <p className="text-lg font-semibold text-gray-800">{item.name}</p>
-                      <p className="text-gray-600">Stok: {item.quantity} unit</p>
+                      <p className="text-gray-600">
+                        Stok: {item.quantity} unit{' '}
+                        {item.quantity < 5 && (
+                          <span className="text-red-600 font-bold">(Stok Sedikit)</span>
+                        )}
+                      </p>
                     </div>
                     <div className="ml-4 flex space-x-4">
                       <button
@@ -215,8 +223,6 @@ const WelcomingPage = () => {
           )}
         </div>
       </div>
-
-      {/* Pop-up Konfirmasi Hapus */}
       {showDeleteConfirmation && (
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-md shadow-lg w-96">
