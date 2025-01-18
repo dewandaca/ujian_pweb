@@ -1,1 +1,1 @@
-folder data_ujian di taru di C:\xampp\htdocs supaya bisa jalan databasenya, dan nyalakan xampp nya
+Harus buat database terlebih dahulu dengan nama database stok_pakan, lalu tambahkan tabel stok yang berisi id, name dan quantity. folder data_ujian di taruh di C:\xampp\htdocs supaya bisa jalan databasenya, dan nyalakan xampp nya
